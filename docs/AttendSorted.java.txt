@@ -1,0 +1,71 @@
+// 第 3 题的参考实现：只改 Attendee List 的遍历部分（改法 A）。
+// 用法：覆盖 src/java/attendance/Attend.java 后重新部署即可。
+package attendance;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/Attend")
+public class Attend extends HttpServlet {
+
+    private static final long serialVersionUID = 1L;
+
+    private static final Map<String, String> sid2seat = new HashMap<String, String>();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        handle(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        handle(request, response);
+    }
+
+    private void handle(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter out = response.getWriter();
+
+        String studentId = request.getParameter("studentId");
+        String seatId    = request.getParameter("seatId");
+
+        out.println("Simple Attendance by Seat Id<br><br>");
+
+        if (studentId == null) {
+            // ----- Attendee List: dump the map, sorted by student id -----
+            synchronized (sid2seat) {
+                if (sid2seat.isEmpty()) {
+                    out.println("No sign-in record yet.<br><br>");
+                } else {
+                    // TreeMap 按 key（学号）的字典序排列；学号定长时等价于数值序
+                    for (Map.Entry<String, String> e : new TreeMap<String, String>(sid2seat).entrySet()) {
+                        out.println(e.getKey() + " : " + e.getValue() + "<br>");
+                    }
+                }
+            }
+            out.println("<br><a href=\"index.html\">Attendance Submission</a>");
+        } else if (!studentId.trim().isEmpty()) {
+            synchronized (sid2seat) {
+                sid2seat.put(studentId.trim(), seatId == null ? "" : seatId.trim());
+            }
+            out.println(studentId + ":" + seatId + " is recorded:<br><br>");
+            out.println("<a href=\"index.html\">Attendance Submission</a> | "
+                      + "<a href=\"Attend\">Attendee List</a>");
+        } else {
+            out.println("Student Id can not be blank<br><br>");
+            out.println("<a href=\"index.html\">Attendance Submission</a> | "
+                      + "<a href=\"Attend\">Attendee List</a>");
+        }
+    }
+}
